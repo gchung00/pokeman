@@ -22,7 +22,8 @@ export const KS1_ADVANCED_WORDS = [
 // 음성 합성 (TTS) 헬퍼 함수
 const doSpeak = (word, voices, rate) => {
   window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(word.toLowerCase());
+  // 마침표를 붙여주면 윈도우 목소리들이 알파벳으로 읽는 것을 멈추고 단어로 인식할 확률이 높습니다.
+  const utterance = new SpeechSynthesisUtterance(word.toLowerCase() + ".");
   utterance.lang = "en-GB";
   utterance.rate = rate;
   utterance.pitch = 1.0; // 너무 높지 않게 조정
@@ -37,6 +38,10 @@ const doSpeak = (word, voices, rate) => {
     "Serena",   // iOS 정통 영국식
     "Arthur",   // iOS 최신 고품질
     "Martha",   // iOS 최신 고품질
+    "Libby Online",  // Edge 최신 영국식 (추천)
+    "Sonia Online",  // Edge 최신 영국식 (추천)
+    "Ryan Online",   // Edge 최신 영국식
+    "Maisie Online",
     "Microsoft Susan Online", // Edge/Windows 고품질
     "Microsoft George Online",
     "Hazel"     // Windows 표준
