@@ -251,6 +251,26 @@ p.instruction {
   transform: scale(0.95);
 }
 
+.btn-main {
+  padding: 20px !important;
+  font-size: 1.5rem !important;
+  margin-top: 5px;
+  animation: pulseHighlight 2s infinite;
+}
+
+.btn-secondary-random {
+  background-color: #7F8C8D !important; /* 조금 덜 튀는 회색 계열 */
+  margin-top: 15px;
+  font-size: 1rem !important;
+  opacity: 0.9;
+}
+
+@keyframes pulseHighlight {
+  0% { transform: scale(1); box-shadow: 0 4px 15px rgba(155, 89, 182, 0.3); }
+  50% { transform: scale(1.03); box-shadow: 0 8px 25px rgba(155, 89, 182, 0.5); }
+  100% { transform: scale(1); box-shadow: 0 4px 15px rgba(155, 89, 182, 0.3); }
+}
+
 .hint-magic-container {
   position: absolute;
   top: 70%;

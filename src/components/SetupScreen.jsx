@@ -125,11 +125,12 @@ export default function SetupScreen({ onStartGame, caughtIds }) {
 
         <div style={{textAlign: 'center', margin: '15px 0', fontWeight: 'bold'}}>✨ OR ✨</div>
 
-        <button className="btn btn-random" onClick={() => handleRandomPlay(false)}>
-          Random 7+ Word 🎲
+        <button className="btn btn-random btn-hear btn-main" onClick={() => handleRandomPlay(true)}>
+          🎧 Listen & Spell (Voice Mode)
         </button>
-        <button className="btn btn-random btn-hear" onClick={() => handleRandomPlay(true)}>
-          Listen & Spell 🎧 (Voice Mode)
+
+        <button className="btn btn-random btn-secondary-random" onClick={() => handleRandomPlay(false)}>
+          🎲 Random 7+ Word (View Mode)
         </button>
       </div>
     </div>
