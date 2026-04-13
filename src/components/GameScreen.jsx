@@ -11,6 +11,7 @@ export default function GameScreen({ word, isVoiceMode, onBack, score, setCaught
   const [pokemonName, setPokemonName] = useState('');
   const [hearCount, setHearCount] = useState(0);
   const [showResultOverlay, setShowResultOverlay] = useState(false);
+  const [isSuperHint, setIsSuperHint] = useState(false);
   const timerRefs = useRef([]);
   const MAX_MISTAKES = 6;
 
@@ -81,17 +82,21 @@ export default function GameScreen({ word, isVoiceMode, onBack, score, setCaught
     setHintActive(true);
     timerRefs.current.push(setTimeout(() => setHintActive(false), 1500));
 
-    // 아직 맞추지 않은 알파벳 중 1~2개 무작위 추출
+    // 15% 확률로 슈퍼 힌트 (2글자), 85% 확률로 일반 힌트 (1글자)
+    const isSuper = Math.random() < 0.15;
+    setIsSuperHint(isSuper);
+    timerRefs.current.push(setTimeout(() => setIsSuperHint(false), 2000));
+
     const unrevealed = Array.from(uniqueLetters).filter(l => !guessedLetters.includes(l));
     const lettersToReveal = [];
-    if (unrevealed.length > 0) {
-      const idx1 = Math.floor(Math.random() * unrevealed.length);
-      lettersToReveal.push(unrevealed[idx1]);
-      unrevealed.splice(idx1, 1);
-    }
-    if (unrevealed.length > 0) {
-      const idx2 = Math.floor(Math.random() * unrevealed.length);
-      lettersToReveal.push(unrevealed[idx2]);
+    const numToReveal = isSuper ? 2 : 1;
+
+    for (let i = 0; i < numToReveal; i++) {
+       if (unrevealed.length > 0) {
+         const idx = Math.floor(Math.random() * unrevealed.length);
+         lettersToReveal.push(unrevealed[idx]);
+         unrevealed.splice(idx, 1);
+       }
     }
 
     // 포켓볼 연출 중간 타이밍에 글자 열어주기
@@ -141,9 +146,10 @@ export default function GameScreen({ word, isVoiceMode, onBack, score, setCaught
       <div className="pokemon-display">
         {/* 힌트 연출 */}
         {hintActive && (
-          <div className="hint-magic-container">
+          <div className={`hint-magic-container ${isSuperHint ? 'super' : ''}`}>
              <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png" alt="hint ball" className="hint-pokeball" />
              <div className="hint-sparkles">✨</div>
+             {isSuperHint && <div className="super-hint-text">SUPER HINT! 🔥</div>}
           </div>
         )}
         {/* 풍선 묶음과 포켓몬 - 맞출때마다 조금씩 아래로 떨어짐 */}

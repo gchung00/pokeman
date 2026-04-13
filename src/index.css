@@ -296,6 +296,30 @@ p.instruction {
   animation: hintSparklePop 1.5s forwards;
 }
 
+.hint-magic-container.super .hint-sparkles {
+  font-size: 8rem;
+  filter: hue-rotate(45deg) brightness(1.5);
+}
+
+.super-hint-text {
+  position: absolute;
+  top: -80px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: #FFD700;
+  text-shadow: 2px 2px 0 #EE1515, -2px -2px 0 #EE1515, 2px -2px 0 #EE1515, -2px 2px 0 #EE1515;
+  white-space: nowrap;
+  animation: superHintPop 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes superHintPop {
+  0% { transform: translateX(-50%) scale(0); opacity: 0; }
+  50% { transform: translateX(-50%) scale(1.4); opacity: 1; }
+  100% { transform: translateX(-50%) scale(1); opacity: 1; }
+}
+
 /* Balloons and Flying Pokemon */
 .balloon-cluster {
   position: relative;
