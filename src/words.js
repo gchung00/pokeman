@@ -22,7 +22,7 @@ export const KS1_ADVANCED_WORDS = [
 // 음성 합성 (TTS) 헬퍼 함수
 const doSpeak = (word, voices, rate) => {
   window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(word);
+  const utterance = new SpeechSynthesisUtterance(word.toLowerCase());
   utterance.lang = "en-GB";
   utterance.rate = rate;
   utterance.pitch = 1.0; // 너무 높지 않게 조정
