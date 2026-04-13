@@ -223,6 +223,34 @@ p.instruction {
   cursor: not-allowed;
 }
 
+.btn-hear {
+  background: #9B59B6; /* Deep Purple */
+  color: white;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 20px;
+  font-weight: 900;
+  box-shadow: 0 4px 10px rgba(155, 89, 182, 0.3);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.2);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+.btn-hear:hover {
+  transform: scale(1.05);
+  background: #A569BD;
+  box-shadow: 0 6px 15px rgba(155, 89, 182, 0.4);
+}
+
+.btn-hear:active {
+  transform: scale(0.95);
+}
+
 .hint-magic-container {
   position: absolute;
   top: 70%;

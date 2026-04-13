@@ -127,11 +127,15 @@ export default function GameScreen({ word, isVoiceMode, onBack, score, setCaught
         <button className="hint-btn" onClick={handleHint} disabled={score < 1 || isWon || isLost}>
           🔍 Hint ({score})
         </button>
-        <button className="backs-btn" onClick={() => {
-          const rate = hearCount === 0 ? 0.85 : 0.68;
+        <button className="btn-hear" onClick={() => {
+          // 누를수록 더 느려지는 로직 (0.85 -> 0.65 -> 0.5)
+          const rates = [0.85, 0.65, 0.5];
+          const currentRate = rates[Math.min(hearCount, rates.length - 1)];
           setHearCount(c => c + 1);
-          speakWord(word, rate);
-        }}>🔊 Hear{hearCount > 0 ? ' 🐢' : ''}</button>
+          speakWord(word, currentRate);
+        }}>
+          🔊 Hear {hearCount > 0 ? Array(Math.min(hearCount, 3)).fill('🐢').join('') : ''}
+        </button>
       </div>
 
       <div className="pokemon-display">
