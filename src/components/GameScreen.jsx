@@ -2,16 +2,31 @@ import { useState, useEffect, useRef } from 'react';
 import Keyboard from './Keyboard';
 import { speakWord } from '../words';
 
-export default function GameScreen({ word, isVoiceMode, onBack, score, setCaughtIds }) {
+export default function GameScreen({ word, isVoiceMode, onBack, onFinish, score, setCaughtIds }) {
   const [guessedLetters, setGuessedLetters] = useState([]);
   const [pokemonId] = useState(() => Math.floor(Math.random() * 151) + 1);
   const [hintActive, setHintActive] = useState(false);
   const [hasScored, setHasScored] = useState(false);
   const [lastGuessedLetter, setLastGuessedLetter] = useState(null);
+  const [correctFlashLetters, setCorrectFlashLetters] = useState(new Set());
+  const [praiseEmojis, setPraiseEmojis] = useState([]); // {id, emoji}
   const [pokemonName, setPokemonName] = useState('');
   const [hearCount, setHearCount] = useState(0);
   const [showResultOverlay, setShowResultOverlay] = useState(false);
   const [isSuperHint, setIsSuperHint] = useState(false);
+  
+  // Glowing hints logic
+  const [glowState] = useState(() => {
+    const correctLetters = Array.from(new Set(word.replace(/\s/g, '').split('')));
+    const correctShuffled = [...correctLetters].sort(() => Math.random() - 0.5);
+    
+    const allLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+    const noiseLetters = allLetters.filter(l => !correctLetters.includes(l));
+    const noiseShuffled = [...noiseLetters].sort(() => Math.random() - 0.5);
+    
+    return { correct: correctShuffled, noise: noiseShuffled };
+  });
+
   const timerRefs = useRef([]);
   const MAX_MISTAKES = 6;
 
@@ -21,6 +36,41 @@ export default function GameScreen({ word, isVoiceMode, onBack, score, setCaught
   const mistakes = guessedLetters.filter(l => !word.includes(l)).length;
   const isLost = mistakes >= MAX_MISTAKES;
   const isWon = Array.from(uniqueLetters).every(l => guessedLetters.includes(l));
+
+  // Glow calculation
+  const getGlowData = () => {
+    if (isWon || isLost) return {};
+    
+    let numCorrect = 0;
+    let numNoise = 0;
+    let className = "";
+    
+    if (mistakes === 1 || mistakes === 2) {
+      numCorrect = 1; // 1 correct letter starts glowing
+      numNoise = 4;   // with 4 random noise letters (hard to guess)
+      className = "glow-soft";
+    } else if (mistakes === 3 || mistakes === 4) {
+      numCorrect = 1;
+      numNoise = 2;   // Noise is reduced
+      className = "glow-medium";
+    } else if (mistakes === 5) {
+      numCorrect = 1;
+      numNoise = 1;   // Only 1 correct + 1 noise (50/50 lifeline)
+      className = "glow-bright";
+    }
+    
+    if (numCorrect === 0 && numNoise === 0) return {};
+    
+    const unrevealedCorrect = glowState.correct.filter(l => !guessedLetters.includes(l)).slice(0, numCorrect);
+    const unrevealedNoise = glowState.noise.filter(l => !guessedLetters.includes(l)).slice(0, numNoise);
+    
+    const map = {};
+    unrevealedCorrect.forEach(l => map[l] = className);
+    unrevealedNoise.forEach(l => map[l] = className);
+    return map;
+  };
+
+  const glowingLettersMap = getGlowData();
 
   // unmount 시 pending 타이머 전부 정리
   useEffect(() => {
@@ -33,13 +83,17 @@ export default function GameScreen({ word, isVoiceMode, onBack, score, setCaught
     }
   }, [word, isVoiceMode]);
 
-  // 이겼을 때 딱 한 번만 성적 올려주기 (ID 추가)
+  // 이겼을 때 딱 한 번만 성적 올려주기 (ID 추가) 및 상위 컴포넌트에 결과 보고
   useEffect(() => {
     if (isWon && !hasScored) {
       setCaughtIds(prev => [...prev, pokemonId]);
       setHasScored(true);
+      onFinish('win');
+    } else if (isLost && !hasScored) {
+      setHasScored(true); // Treat as finished
+      onFinish('lose');
     }
-  }, [isWon, hasScored, setCaughtIds, pokemonId]);
+  }, [isWon, isLost, hasScored, setCaughtIds, pokemonId, onFinish]);
 
   // 결과 오버레이 지연 표시 — 애니메이션이 끝난 뒤에 등장
   useEffect(() => {
@@ -64,10 +118,38 @@ export default function GameScreen({ word, isVoiceMode, onBack, score, setCaught
   }, [isWon, pokemonId, pokemonName]);
 
   const handleLetterPress = (letter) => {
-    if (isLost || isWon) return;
+    if (isLost || isWon || guessedLetters.includes(letter)) return;
+    
     setGuessedLetters(prev => [...prev, letter]);
-    setLastGuessedLetter(letter);
-    timerRefs.current.push(setTimeout(() => setLastGuessedLetter(null), 400));
+
+    if (isVoiceMode) {
+      speakWord(word, 0.85); // 다시 한 번 단어 읽어주기
+    }
+
+    if (word.includes(letter)) {
+      // 1. 키보드 반짝임 효과
+      setCorrectFlashLetters(prev => new Set(prev).add(letter));
+      timerRefs.current.push(setTimeout(() => {
+        setCorrectFlashLetters(prev => {
+          const next = new Set(prev);
+          next.delete(letter);
+          return next;
+        });
+      }, 600));
+
+      // 2. 칭찬 이모지 효과 (랜덤 이모지)
+      const emojis = ["⭐","✨","🎉","👏","💥","🌟"];
+      const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+      const newPraise = { id: Date.now(), emoji: randomEmoji };
+      setPraiseEmojis(prev => [...prev, newPraise]);
+      timerRefs.current.push(setTimeout(() => {
+        setPraiseEmojis(prev => prev.filter(p => p.id !== newPraise.id));
+      }, 1000));
+
+      // 3. 마지막 글자 추적 (애니메이션 트리거용)
+      setLastGuessedLetter(letter);
+      timerRefs.current.push(setTimeout(() => setLastGuessedLetter(null), 600));
+    }
   };
 
   const handleHint = () => {
@@ -82,8 +164,8 @@ export default function GameScreen({ word, isVoiceMode, onBack, score, setCaught
     setHintActive(true);
     timerRefs.current.push(setTimeout(() => setHintActive(false), 1500));
 
-    // 15% 확률로 슈퍼 힌트 (2글자), 85% 확률로 일반 힌트 (1글자)
-    const isSuper = Math.random() < 0.15;
+    // 38% 확률로 슈퍼 힌트 (2글자)
+    const isSuper = Math.random() < 0.38;
     setIsSuperHint(isSuper);
     timerRefs.current.push(setTimeout(() => setIsSuperHint(false), 2000));
 
@@ -102,6 +184,11 @@ export default function GameScreen({ word, isVoiceMode, onBack, score, setCaught
     // 포켓볼 연출 중간 타이밍에 글자 열어주기
     timerRefs.current.push(setTimeout(() => {
       setGuessedLetters(prev => [...prev, ...lettersToReveal]);
+      // 힌트로 열린 글자들도 애니메이션 효과 (단, 이모지는 생략)
+      if (lettersToReveal.length > 0) {
+        setLastGuessedLetter(lettersToReveal[lettersToReveal.length - 1]);
+        timerRefs.current.push(setTimeout(() => setLastGuessedLetter(null), 600));
+      }
     }, 800));
   };
 
@@ -144,6 +231,11 @@ export default function GameScreen({ word, isVoiceMode, onBack, score, setCaught
       </div>
 
       <div className="pokemon-display">
+        {/* 칭찬 이모지 연출 */}
+        {praiseEmojis.map(p => (
+           <div key={p.id} className="praise-float">{p.emoji}</div>
+        ))}
+
         {/* 힌트 연출 */}
         {hintActive && (
           <div className={`hint-magic-container ${isSuperHint ? 'super' : ''}`}>
@@ -198,7 +290,7 @@ export default function GameScreen({ word, isVoiceMode, onBack, score, setCaught
           }
           const isRevealed = guessedLetters.includes(char) || isLost || isWon;
           const isMissed = isLost && !guessedLetters.includes(char);
-          const isJustRevealed = char === lastGuessedLetter && guessedLetters.includes(char);
+          const isJustRevealed = char === lastGuessedLetter;
 
           return (
             <div key={index} className={`letter-box ${isRevealed ? 'revealed' : ''} ${isJustRevealed ? 'just-revealed' : ''} ${isMissed ? 'missed' : ''}`}>
@@ -214,6 +306,8 @@ export default function GameScreen({ word, isVoiceMode, onBack, score, setCaught
           word={word} 
           onLetterPress={handleLetterPress} 
           disabled={isWon || isLost}
+          correctFlashLetters={correctFlashLetters}
+          glowingLetters={glowingLettersMap}
         />
       </div>
 

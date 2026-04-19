@@ -1,14 +1,17 @@
 import { useState } from 'react';
-import { KS1_ADVANCED_WORDS } from '../words';
+import { ADVANCED_VOCAB } from '../words';
 import Gallery from './Gallery';
 
 const FUN_WORDS = [
-  "POKEMON", "PIKACHU", "EEVEE", "CHARIZARD", "SQUIRTLE", "BULBASAUR", "MEWTWO", "GENGAR",
-  "LEGO", "ROBLOX", "MINECRAFT", "MARIO", "SONIC", "BATMAN", "SPIDERMAN", "ELSA", "ANNA",
-  "MOMMY", "DADDY", "GRANDPA", "GRANDMA"
+  { word: "POKEMON" }, { word: "PIKACHU" }, { word: "EEVEE" }, { word: "CHARIZARD" },
+  { word: "SQUIRTLE" }, { word: "BULBASAUR" }, { word: "MEWTWO" }, { word: "GENGAR" },
+  { word: "LEGO" }, { word: "ROBLOX" }, { word: "MINECRAFT" }, { word: "MARIO" },
+  { word: "SONIC" }, { word: "BATMAN" }, { word: "SPIDERMAN" }, { word: "ELSA" },
+  { word: "ANNA" }, { word: "MOMMY" }, { word: "DADDY" }, { word: "GRANDPA" },
+  { word: "GRANDMA" }
 ];
 
-export default function SetupScreen({ onStartGame, caughtIds }) {
+export default function SetupScreen({ onStartGame, caughtIds, streak }) {
   const [inputVal, setInputVal] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [isValidating, setIsValidating] = useState(false);
@@ -21,13 +24,12 @@ export default function SetupScreen({ onStartGame, caughtIds }) {
     const sanitized = e.target.value.replace(/[^a-zA-Z\s]/g, '');
     setInputVal(sanitized);
     setErrorMsg('');
-    setForcePlayWord(''); // 입력이 바뀌면 강제 실행 상태 초기화
+    setForcePlayWord(''); 
   };
 
   const validateWordExists = async (wordToTest) => {
     const upperWord = wordToTest.toUpperCase();
-    if (FUN_WORDS.includes(upperWord)) return true;
-    // 모음이 아예 없는 완전히 말도 안되는 문자열은 API 호출 없이 즉시 거절
+    if (FUN_WORDS.some(f => f.word === upperWord)) return true;
     if (!/[AEIOUYaeiouy]/.test(upperWord)) return false; 
     
     try {
@@ -46,7 +48,6 @@ export default function SetupScreen({ onStartGame, caughtIds }) {
     }
 
     if (forcePlayWord === trimmed) {
-      // 이미 경고를 무시하고 진행하기로 확정된 경우
       onStartGame(trimmed, false);
       return;
     }
@@ -69,11 +70,12 @@ export default function SetupScreen({ onStartGame, caughtIds }) {
       }
     }
 
+    setIsValidating(true);
     setIsValidating(false);
 
     if (!allValid) {
       setErrorMsg(`사전에 없는 단어 같아요! 그래도 하시겠어요?`);
-      setForcePlayWord(trimmed); // 다음 클릭 시 무조건 통과하도록 세팅
+      setForcePlayWord(trimmed); 
       return;
     }
 
@@ -81,9 +83,18 @@ export default function SetupScreen({ onStartGame, caughtIds }) {
   };
 
   const handleRandomPlay = (voiceMode) => {
-    const randomIdx = Math.floor(Math.random() * KS1_ADVANCED_WORDS.length);
-    const randomWord = KS1_ADVANCED_WORDS[randomIdx];
-    onStartGame(randomWord, voiceMode);
+    // Streak-based Ramping Logic
+    let minDiff = 1;
+    let maxDiff = 2;
+
+    if (streak >= 8) { minDiff = 4; maxDiff = 5; }
+    else if (streak >= 5) { minDiff = 3; maxDiff = 5; }
+    else if (streak >= 3) { minDiff = 2; maxDiff = 4; }
+    else if (streak >= 1) { minDiff = 1; maxDiff = 3; }
+
+    const pool = ADVANCED_VOCAB.filter(v => v.diff >= minDiff && v.diff <= maxDiff);
+    const selected = pool[Math.floor(Math.random() * pool.length)];
+    onStartGame(selected.word, voiceMode);
   };
 
   return (
@@ -130,7 +141,7 @@ export default function SetupScreen({ onStartGame, caughtIds }) {
         </button>
 
         <button className="btn btn-random btn-secondary-random" onClick={() => handleRandomPlay(false)}>
-          🎲 Random 7+ Word (View Mode)
+          🎲 Random 7+ Word
         </button>
       </div>
     </div>
