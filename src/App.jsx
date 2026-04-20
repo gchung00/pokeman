@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import SetupScreen from './components/SetupScreen';
-import GameScreen from './components/GameScreen';
+import BattleScreen from './components/BattleScreen';
+import Gallery from './components/Gallery';
 
 function App() {
-  const [gameState, setGameState] = useState('setup'); // 'setup', 'playing'
+  // 'setup' | 'picking' | 'playing'
+  const [gameState, setGameState] = useState('setup');
   const [targetWord, setTargetWord] = useState('');
   const [isVoiceMode, setIsVoiceMode] = useState(false);
 
@@ -12,35 +14,63 @@ function App() {
     return saved ? parseInt(saved, 10) : 0;
   });
 
-  const [caughtIds, setCaughtIds] = useState(() => {
-    const saved = localStorage.getItem('pokemonCaughtIds');
-    return saved ? JSON.parse(saved) : [];
+  const [inventory, setInventory] = useState(() => {
+    const saved = localStorage.getItem('pokemonInventory');
+    if (saved) return JSON.parse(saved);
+    return [{ id: 25, hp: 100, caughtDate: Date.now() }]; // Pikachu starter
+  });
+
+  const [activePokemonId, setActivePokemonId] = useState(() => {
+    const saved = localStorage.getItem('activePokemonId');
+    return saved ? parseInt(saved, 10) : 25;
   });
 
   useEffect(() => {
-    localStorage.setItem('pokemonCaughtIds', JSON.stringify(caughtIds));
-  }, [caughtIds]);
-
-  useEffect(() => {
+    localStorage.setItem('pokemonInventory', JSON.stringify(inventory));
     localStorage.setItem('hangmanStreak', streak.toString());
-  }, [streak]);
+    localStorage.setItem('activePokemonId', activePokemonId.toString());
+  }, [inventory, streak, activePokemonId]);
 
-  const score = caughtIds.length;
-
+  // Called when user taps Start on the setup screen
   const handleStartGame = (word, voiceMode = false) => {
     setTargetWord(word.toUpperCase());
     setIsVoiceMode(voiceMode);
+    setGameState('picking'); // go to picker first
+  };
+
+  // Called when user taps a Pokémon in the picker gallery
+  const handlePickedForBattle = (id) => {
+    setActivePokemonId(id);
     setGameState('playing');
   };
 
-  const handleFinishGame = (result) => {
+  const handleFinishGame = (result, caughtId) => {
     if (result === 'win') {
       setStreak(s => s + 1);
+      if (caughtId) {
+        setInventory(prev => [...prev, {
+          id: caughtId,
+          hp: 100,
+          caughtDate: Date.now()
+        }]);
+      }
     } else if (result === 'lose') {
-      // Don't reset completely, but drop it down to make it easier
       setStreak(s => Math.max(0, Math.floor(s / 2) - 1));
     }
   };
+
+  const handleSpendPokemon = (chosenId) => {
+    setInventory(prev => {
+      const idx = prev.findIndex(p => p.id === chosenId);
+      if (idx !== -1) {
+        const newArr = [...prev];
+        newArr.splice(idx, 1);
+        return newArr;
+      }
+      return prev;
+    });
+  };
+
 
   const handleBackToSetup = () => {
     setGameState('setup');
@@ -51,20 +81,35 @@ function App() {
   return (
     <>
       {gameState === 'setup' && (
-        <SetupScreen 
-          onStartGame={handleStartGame} 
-          caughtIds={caughtIds} 
+        <SetupScreen
+          onStartGame={handleStartGame}
+          inventory={inventory}
           streak={streak}
+          activePokemonId={activePokemonId}
+          setActivePokemonId={setActivePokemonId}
         />
       )}
+
+      {/* Sanctuary picker — shown before every battle */}
+      {gameState === 'picking' && (
+        <Gallery
+          inventory={inventory}
+          activeId={activePokemonId}
+          onSelect={setActivePokemonId}
+          onClose={handleBackToSetup}
+          onPickForBattle={handlePickedForBattle}
+        />
+      )}
+
       {gameState === 'playing' && (
-        <GameScreen 
-          word={targetWord} 
-          isVoiceMode={isVoiceMode} 
-          onBack={handleBackToSetup} 
+        <BattleScreen
+          word={targetWord}
+          playerPokemonId={activePokemonId}
+          inventory={inventory}
+          onSpendPokemon={handleSpendPokemon}
+          isVoiceMode={isVoiceMode}
+          onBack={handleBackToSetup}
           onFinish={handleFinishGame}
-          score={score}
-          setCaughtIds={setCaughtIds}
         />
       )}
     </>

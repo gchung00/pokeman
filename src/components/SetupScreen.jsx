@@ -11,138 +11,150 @@ const FUN_WORDS = [
   { word: "GRANDMA" }
 ];
 
-export default function SetupScreen({ onStartGame, caughtIds, streak }) {
+export default function SetupScreen({ onStartGame, inventory, streak, activePokemonId, setActivePokemonId }) {
   const [inputVal, setInputVal] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [isValidating, setIsValidating] = useState(false);
   const [forcePlayWord, setForcePlayWord] = useState('');
   const [showGallery, setShowGallery] = useState(false);
 
-  const score = caughtIds.length;
+  const score = inventory.length;
 
   const handleInputChange = (e) => {
     const sanitized = e.target.value.replace(/[^a-zA-Z\s]/g, '');
     setInputVal(sanitized);
     setErrorMsg('');
-    setForcePlayWord(''); 
+    setForcePlayWord('');
   };
 
   const validateWordExists = async (wordToTest) => {
     const upperWord = wordToTest.toUpperCase();
     if (FUN_WORDS.some(f => f.word === upperWord)) return true;
-    if (!/[AEIOUYaeiouy]/.test(upperWord)) return false; 
-    
+    if (!/[AEIOUYaeiouy]/.test(upperWord)) return false;
     try {
       const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${wordToTest}`);
       return response.ok;
-    } catch (error) {
+    } catch {
       return true;
     }
   };
 
   const handleStartCustom = async () => {
     const trimmed = inputVal.trim();
-    if (!trimmed) {
-      setErrorMsg('단어를 입력해주세요!');
-      return;
-    }
-
-    if (forcePlayWord === trimmed) {
-      onStartGame(trimmed, false);
-      return;
-    }
-
+    if (!trimmed) { setErrorMsg('Enter a word first!'); return; }
+    if (forcePlayWord === trimmed) { onStartGame(trimmed, false); return; }
     const words = trimmed.split(/\s+/);
-    if (words.length > 2) {
-      setErrorMsg('최대 2개의 단어까지만 가능해요!');
-      return;
-    }
-
+    if (words.length > 2) { setErrorMsg('Max 2 words!'); return; }
     setIsValidating(true);
     setErrorMsg('');
-
     let allValid = true;
     for (const w of words) {
-      const isValid = await validateWordExists(w);
-      if (!isValid) {
-        allValid = false;
-        break;
-      }
+      if (!await validateWordExists(w)) { allValid = false; break; }
     }
-
-    setIsValidating(true);
     setIsValidating(false);
-
-    if (!allValid) {
-      setErrorMsg(`사전에 없는 단어 같아요! 그래도 하시겠어요?`);
-      setForcePlayWord(trimmed); 
-      return;
-    }
-
+    if (!allValid) { setErrorMsg(`Not in dictionary — play anyway?`); setForcePlayWord(trimmed); return; }
     onStartGame(trimmed, false);
   };
 
   const handleRandomPlay = (voiceMode) => {
-    // Streak-based Ramping Logic
-    let minDiff = 1;
-    let maxDiff = 2;
-
+    let minDiff = 1, maxDiff = 2;
     if (streak >= 8) { minDiff = 4; maxDiff = 5; }
     else if (streak >= 5) { minDiff = 3; maxDiff = 5; }
     else if (streak >= 3) { minDiff = 2; maxDiff = 4; }
     else if (streak >= 1) { minDiff = 1; maxDiff = 3; }
-
     const pool = ADVANCED_VOCAB.filter(v => v.diff >= minDiff && v.diff <= maxDiff);
     const selected = pool[Math.floor(Math.random() * pool.length)];
     onStartGame(selected.word, voiceMode);
   };
 
   return (
-    <div className="setup-container">
-      {score > 0 && (
-        <button className="score-badge clickable" onClick={() => setShowGallery(true)}>
-          🏆 My Collection: {score}
-        </button>
-      )}
-
+    <div className="landing-root">
       {showGallery && (
-        <Gallery caughtIds={caughtIds} onClose={() => setShowGallery(false)} />
-      )}
-      <img 
-        src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png" 
-        alt="Pikachu" 
-        className="setup-pokemon-img" 
-      />
-      
-      <h1>Catch the Pokémon!</h1>
-      <p className="instruction">치고 싶은 단어를 쓰거나 🎲랜덤 단어를 뽑아보세요!</p>
-      
-      <div className="input-container">
-        <input 
-          type="text" 
-          className="word-input"
-          placeholder="ENTER A WORD" 
-          value={inputVal}
-          onChange={handleInputChange}
-          maxLength={20}
-          disabled={isValidating}
+        <Gallery
+          inventory={inventory}
+          activeId={activePokemonId}
+          onSelect={setActivePokemonId}
+          onClose={() => setShowGallery(false)}
         />
-        
-        {errorMsg && <div className="error-message">{errorMsg}</div>}
+      )}
 
-        <button className="btn btn-primary" onClick={handleStartCustom} disabled={isValidating}>
-          {isValidating ? '확인 중...' : (forcePlayWord === inputVal.trim() && inputVal.trim() !== '' ? '사전에 없지만 고! (강제시작)' : '이 단어로 시작하기')}
+      {/* ═══ HERO IMAGE ═══ */}
+      <div className="landing-hero">
+        <img src="/assets/hero_v2.png" alt="Pokémon Adventure" className="landing-hero-img" />
+        {/* Gradient blend from image into content */}
+        <div className="landing-hero-fade" />
+
+        {/* Floating score badge — top right */}
+        <button className="sanctuary-btn" onClick={() => setShowGallery(true)} aria-label="Open Sanctuary">
+          <div className="sanctuary-icon">
+            {/* SVG: stylised Poké Ball in grass / sanctuary */}
+            <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg" width="44" height="44">
+              {/* Background circle */}
+              <circle cx="22" cy="22" r="20" fill="white" stroke="#FFD700" strokeWidth="2.5"/>
+              {/* Top half — red */}
+              <path d="M3.2 22 A18.8 18.8 0 0 1 40.8 22 Z" fill="#FF4444"/>
+              {/* Bottom half — white */}
+              <path d="M3.2 22 A18.8 18.8 0 0 0 40.8 22 Z" fill="white"/>
+              {/* Middle stripe */}
+              <line x1="3.2" y1="22" x2="40.8" y2="22" stroke="#333" strokeWidth="2.5"/>
+              {/* Centre button outer */}
+              <circle cx="22" cy="22" r="5.5" fill="white" stroke="#333" strokeWidth="2.5"/>
+              {/* Centre button inner */}
+              <circle cx="22" cy="22" r="2.5" fill="#FF4444"/>
+            </svg>
+          </div>
+          <span className="sanctuary-count">{score}</span>
+        </button>
+      </div>
+
+      {/* ═══ MAIN CONTENT CARD ═══ */}
+      <div className="landing-card">
+        {/* Title */}
+        <div className="landing-title-block">
+          <h1 className="landing-title">POKÉMON</h1>
+          <p className="landing-subtitle">SPELLING BATTLE</p>
+        </div>
+
+        {/* Streak indicator */}
+        {streak > 0 && (
+          <div className="streak-badge">
+            🔥 {streak} Win Streak!
+          </div>
+        )}
+
+        {/* Primary CTA */}
+        <button className="cta-primary pulse-animation" onClick={() => handleRandomPlay(true)}>
+          <span className="cta-icon">🎧</span>
+          <span className="cta-label">
+            <span className="cta-main">Listen &amp; Spell</span>
+            <span className="cta-sub">Random word — voice mode</span>
+          </span>
         </button>
 
-        <div style={{textAlign: 'center', margin: '15px 0', fontWeight: 'bold'}}>✨ OR ✨</div>
+        {/* Divider */}
+        <div className="landing-divider">
+          <span className="divider-line" />
+          <span className="divider-text">OR TYPE YOUR OWN</span>
+          <span className="divider-line" />
+        </div>
 
-        <button className="btn btn-random btn-hear btn-main" onClick={() => handleRandomPlay(true)}>
-          🎧 Listen & Spell (Voice Mode)
-        </button>
+        {/* Custom word input */}
+        <div className="custom-word-row">
+          <input
+            type="text"
+            className="landing-input"
+            placeholder="Enter a word…"
+            value={inputVal}
+            onChange={handleInputChange}
+            maxLength={20}
+            disabled={isValidating}
+          />
+          <button className="cta-secondary" onClick={handleStartCustom} disabled={isValidating}>
+            {isValidating ? '⏳' : '⚔️'}
+          </button>
+        </div>
 
-        <button className="btn btn-random btn-secondary-random" onClick={() => handleRandomPlay(false)}>
-          🎲 Random 7+ Word
-        </button>
+        {errorMsg && <p className="landing-error">{errorMsg}</p>}
       </div>
     </div>
   );
