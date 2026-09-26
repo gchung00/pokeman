@@ -36,8 +36,10 @@ export default function BattleScreen({ word, playerPokemonId, inventory, onSpend
   
   // Hint states
   const [hintActive, setHintActive] = useState(false);
-  const [isSuperHint, setIsSuperHint] = useState(false);
   const [isSacrificeModalOpen, setIsSacrificeModalOpen] = useState(false);
+  // Timed hint: letter glows on keyboard for 5s — player must press it themselves
+  const [timedHintLetters, setTimedHintLetters] = useState(new Set());
+  const HINT_DURATION_MS = 5000;
   
   // Glow state for passive keyboard hint
   const [glowState] = useState(() => {
@@ -56,7 +58,7 @@ export default function BattleScreen({ word, playerPokemonId, inventory, onSpend
     async function load() {
       try {
         const p = await fetchPokemon(playerPokemonId || 25);
-        const oppId = Math.floor(Math.random() * 151) + 1;
+        const oppId = Math.floor(Math.random() * 1025) + 1;
         const o = await fetchPokemon(oppId);
         if (!p || !o) return;
         const pInfo = getPokemonInfo(p.id);
@@ -91,11 +93,11 @@ export default function BattleScreen({ word, playerPokemonId, inventory, onSpend
 
     let numCorrect = 0, numNoise = 0, className = "";
     if (lives === 3) {
-      numCorrect = 1; numNoise = 2; className = "glow-soft";
+      numCorrect = 1; numNoise = 4; className = "glow-soft";
     } else if (lives === 2) {
-      numCorrect = 1; numNoise = 2; className = "glow-medium";
+      numCorrect = 1; numNoise = 3; className = "glow-medium";
     } else if (lives <= 1) {
-      numCorrect = 1; numNoise = 1; className = "glow-bright";
+      numCorrect = 1; numNoise = 2; className = "glow-bright";
     }
 
     const unrevealedCorrect = glowState.correct.filter(l => !guessedLetters.includes(l)).slice(0, numCorrect);
@@ -132,34 +134,29 @@ export default function BattleScreen({ word, playerPokemonId, inventory, onSpend
 
   const handleConfirmHint = (chosenId) => {
     setIsSacrificeModalOpen(false);
-    onSpendPokemon(chosenId); // Spends the specifically chosen pokemon
-    
+    onSpendPokemon(chosenId);
+
     setHintActive(true);
     timerRefs.current.push(setTimeout(() => setHintActive(false), 1500));
 
-    // 38% chance for SUPER HINT
-    const isSuper = Math.random() < 0.38;
-    setIsSuperHint(isSuper);
-    timerRefs.current.push(setTimeout(() => setIsSuperHint(false), 2000));
-
     const unrevealed = Array.from(uniqueLetters).filter(l => !guessedLetters.includes(l));
-    const lettersToReveal = [];
-    const numToReveal = isSuper ? 2 : 1;
+    if (unrevealed.length === 0) return;
 
-    for (let i = 0; i < numToReveal; i++) {
-       if (unrevealed.length > 0) {
-         const idx = Math.floor(Math.random() * unrevealed.length);
-         lettersToReveal.push(unrevealed[idx]);
-         unrevealed.splice(idx, 1);
-       }
-    }
+    // Pick 1 random unrevealed letter and highlight it on the keyboard for HINT_DURATION_MS.
+    // The player must press it themselves — the hint does NOT auto-reveal it.
+    const letter = unrevealed[Math.floor(Math.random() * unrevealed.length)];
 
     timerRefs.current.push(setTimeout(() => {
-      setGuessedLetters(prev => [...prev, ...lettersToReveal]);
-      if (lettersToReveal.length > 0) {
-        setLastCorrect(lettersToReveal[lettersToReveal.length - 1]);
-        timerRefs.current.push(setTimeout(() => setLastCorrect(null), 600));
-      }
+      setTimedHintLetters(prev => new Set([...prev, letter]));
+      showLog(`⏱️ Hint: press the glowing key within 5 seconds!`);
+      timerRefs.current.push(setTimeout(() => {
+        setTimedHintLetters(prev => {
+          const next = new Set(prev);
+          next.delete(letter);
+          return next;
+        });
+        showLog(`⌛ Hint expired! Keep going!`);
+      }, HINT_DURATION_MS));
     }, 800));
   };
 
@@ -190,6 +187,15 @@ export default function BattleScreen({ word, playerPokemonId, inventory, onSpend
   const handleLetterPress = (letter) => {
     if (isLost || isWon || guessedLetters.includes(letter)) return;
     setGuessedLetters(prev => [...prev, letter]);
+
+    // Clear this letter from timed hints whether correct or not
+    if (timedHintLetters.has(letter)) {
+      setTimedHintLetters(prev => {
+        const next = new Set(prev);
+        next.delete(letter);
+        return next;
+      });
+    }
     
     if (word.includes(letter)) {
       const pts = getLetterEnergy(letter);
@@ -271,10 +277,9 @@ export default function BattleScreen({ word, playerPokemonId, inventory, onSpend
 
         {/* Hint Magic Overlays */}
         {hintActive && (
-          <div className={`hint-magic-container ${isSuperHint ? 'super' : ''}`}>
+          <div className="hint-magic-container">
              <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png" alt="hint ball" className="hint-pokeball" />
              <div className="hint-sparkles">✨</div>
-             {isSuperHint && <div className="super-hint-text">SUPER HINT! 🔥</div>}
           </div>
         )}
 
@@ -419,6 +424,7 @@ export default function BattleScreen({ word, playerPokemonId, inventory, onSpend
               disabled={isWon || isLost}
               correctFlashLetters={new Set(lastCorrect ? [lastCorrect] : [])}
               glowingLetters={glowingLettersMap}
+              timedHintLetters={timedHintLetters}
             />
           </div>
         </div>

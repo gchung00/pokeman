@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { ADVANCED_VOCAB } from '../words';
+import { getPokemonSprite } from '../lib/pokeapi';
 
 const nameCache = {};
 
@@ -8,8 +9,10 @@ const pseudoRandom = (seed) => {
   return x - Math.floor(x);
 };
 
-function GalleryEntity({ pokemon, index, isActive, onSelect, battlePickMode }) {
-  const { id } = pokemon;
+const PAGE_SIZE = 12;
+
+function GalleryEntity({ pokemon, index, isActive, onSelect, battlePickMode, onMove }) {
+  const { id, x: savedX, y: savedY, caughtDate } = pokemon;
   const [name, setName] = useState(nameCache[id] || '');
   const [showSpeech, setShowSpeech] = useState(false);
 
@@ -26,23 +29,74 @@ function GalleryEntity({ pokemon, index, isActive, onSelect, battlePickMode }) {
   }, [id]);
 
   const entityData = useMemo(() => {
-    // Increase scattering for a more 'free' feel
     const randomRange = (min, max, s) => min + pseudoRandom(s) * (max - min);
-    
-    // Wider horizontal and vertical distribution
-    const top = randomRange(28, 75, id + index);
-    const left = randomRange(5, 85, id * 2 + index);
+
+    const top = savedY !== undefined ? savedY : randomRange(28, 75, id + index);
+    const left = savedX !== undefined ? savedX : randomRange(5, 85, id * 2 + index);
     const scaleX = pseudoRandom(id * 3 + index) > 0.5 ? -1 : 1;
-    
-    // Scale slightly based on 'depth' (top position)
     const baseScale = 0.55 + (top / 100) * 0.9;
-    
+
     const wordIdx = Math.floor(pseudoRandom(id * 4 + index) * ADVANCED_VOCAB.length);
     const speechWord = ADVANCED_VOCAB[wordIdx].word;
     const floatDelay = pseudoRandom(id * 5 + index) * 2;
-    
+
     return { top, left, scaleX, baseScale, speechWord, floatDelay };
-  }, [id, index]);
+  }, [id, index, savedX, savedY]);
+
+  const [position, setPosition] = useState({ x: entityData.left, y: entityData.top });
+  const [isDragging, setIsDragging] = useState(false);
+  const pointerStartRef = useRef(null);
+
+  useEffect(() => {
+    setPosition({ x: entityData.left, y: entityData.top });
+  }, [entityData.left, entityData.top]);
+
+  const handlePointerDown = (e) => {
+    e.target.setPointerCapture(e.pointerId);
+    setIsDragging(true);
+    pointerStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      startPosX: position.x,
+      startPosY: position.y,
+      moved: false
+    };
+  };
+
+  const handlePointerMove = (e) => {
+    if (!isDragging || !pointerStartRef.current) return;
+    const parent = e.target.closest('.park-landscape');
+    if (!parent) return;
+
+    const deltaX = e.clientX - pointerStartRef.current.x;
+    const deltaY = e.clientY - pointerStartRef.current.y;
+
+    if (Math.abs(deltaX) > 3 || Math.abs(deltaY) > 3) {
+      pointerStartRef.current.moved = true;
+    }
+
+    if (pointerStartRef.current.moved) {
+      const rect = parent.getBoundingClientRect();
+      const percentX = (deltaX / rect.width) * 100;
+      const percentY = (deltaY / rect.height) * 100;
+      setPosition({
+        x: Math.max(0, Math.min(100, pointerStartRef.current.startPosX + percentX)),
+        y: Math.max(0, Math.min(100, pointerStartRef.current.startPosY + percentY))
+      });
+    }
+  };
+
+  const handlePointerUp = (e) => {
+    if (isDragging) {
+      setIsDragging(false);
+      e.target.releasePointerCapture(e.pointerId);
+      if (pointerStartRef.current && pointerStartRef.current.moved) {
+        if (onMove) onMove(id, caughtDate, position.x, position.y);
+      } else {
+        onSelect(id);
+      }
+    }
+  };
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -57,12 +111,17 @@ function GalleryEntity({ pokemon, index, isActive, onSelect, battlePickMode }) {
   return (
     <div
       className={`pokemon-entity ${isActive ? 'active-entity' : ''} ${battlePickMode ? 'battle-beg-wrap' : ''}`}
-      onClick={() => onSelect(id)}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
       style={{
-        top: `${entityData.top}%`,
-        left: `${entityData.left}%`,
-        zIndex: Math.floor(entityData.top),
-        animationDelay: `${entityData.floatDelay}s`
+        top: `${position.y}%`,
+        left: `${position.x}%`,
+        zIndex: Math.floor(position.y) + (isDragging ? 1000 : 0),
+        animationDelay: `${entityData.floatDelay}s`,
+        cursor: isDragging ? 'grabbing' : 'pointer',
+        touchAction: 'none'
       }}
     >
       <div className="entity-name-tag">
@@ -70,7 +129,6 @@ function GalleryEntity({ pokemon, index, isActive, onSelect, battlePickMode }) {
         {name || '...'}
       </div>
 
-      {/* In battle-pick mode show NOTHING, else show word */}
       {!battlePickMode && (
         <div className={`speech-bubble ${showSpeech ? 'visible' : ''}`}>
           {entityData.speechWord}
@@ -78,7 +136,7 @@ function GalleryEntity({ pokemon, index, isActive, onSelect, battlePickMode }) {
       )}
 
       <img
-        src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/${id}.gif`}
+        src={getPokemonSprite(id)}
         alt={name}
         className="entity-sprite"
         style={{
@@ -92,11 +150,17 @@ function GalleryEntity({ pokemon, index, isActive, onSelect, battlePickMode }) {
   );
 }
 
-export default function Gallery({ inventory, activeId, onSelect, onClose, onPickForBattle }) {
+export default function Gallery({ inventory, activeId, onSelect, onClose, onPickForBattle, onMovePokemon }) {
   const battlePickMode = !!onPickForBattle;
+  const [page, setPage] = useState(0);
+  const totalPages = Math.ceil(inventory.length / PAGE_SIZE);
+
+  // Clamp page if inventory shrinks (e.g. after spending a Pokémon as hint)
+  const safePage = Math.min(page, Math.max(0, totalPages - 1));
+  const visibleInventory = inventory.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
 
   const handleSelect = (id) => {
-    onSelect(id); // always update active
+    onSelect(id);
     if (battlePickMode) onPickForBattle(id);
   };
 
@@ -125,18 +189,41 @@ export default function Gallery({ inventory, activeId, onSelect, onClose, onPick
         {inventory.length === 0 ? (
           <div className="empty-message land-empty">Your sanctuary is empty. Go catch some Pokémon!</div>
         ) : (
-          inventory.map((pokemon, index) => (
+          visibleInventory.map((pokemon, index) => (
             <GalleryEntity
-              key={`${pokemon.id}-${index}`}
+              key={`${pokemon.id}-${pokemon.caughtDate || index}`}
               pokemon={pokemon}
-              index={index}
+              index={safePage * PAGE_SIZE + index}
               isActive={pokemon.id === activeId}
               onSelect={handleSelect}
               battlePickMode={battlePickMode}
+              onMove={onMovePokemon}
             />
           ))
         )}
       </div>
+
+      {totalPages > 1 && (
+        <div className="gallery-pagination">
+          <button
+            className="gallery-page-btn"
+            onClick={() => setPage(p => Math.max(0, p - 1))}
+            disabled={safePage === 0}
+          >
+            ◀
+          </button>
+          <span className="gallery-page-label">
+            {safePage + 1} / {totalPages}
+          </span>
+          <button
+            className="gallery-page-btn"
+            onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+            disabled={safePage === totalPages - 1}
+          >
+            ▶
+          </button>
+        </div>
+      )}
     </div>
   );
 }

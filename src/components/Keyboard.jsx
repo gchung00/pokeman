@@ -1,4 +1,4 @@
-export default function Keyboard({ guessedLetters, word, onLetterPress, disabled, correctFlashLetters, glowingLetters = {} }) {
+export default function Keyboard({ guessedLetters, word, onLetterPress, disabled, correctFlashLetters, glowingLetters = {}, timedHintLetters }) {
   const rows = [
     ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
     ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
@@ -14,12 +14,14 @@ export default function Keyboard({ guessedLetters, word, onLetterPress, disabled
             const isCorrect = isGuessed && word.includes(letter);
             const isWrong = isGuessed && !word.includes(letter);
             const isFlashing = correctFlashLetters?.has(letter);
+            const isTimedHint = timedHintLetters?.has(letter) && !isGuessed;
             const glowClass = glowingLetters[letter] || "";
 
             let btnClass = `key-btn ${glowClass}`;
             if (isCorrect) btnClass += " correct";
             if (isWrong) btnClass += " wrong";
             if (isFlashing) btnClass += " key-correct-flash";
+            if (isTimedHint) btnClass += " key-timed-hint";
 
             return (
               <button
