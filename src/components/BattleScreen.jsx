@@ -41,14 +41,6 @@ export default function BattleScreen({ word, playerPokemonId, inventory, onSpend
   const [timedHintLetters, setTimedHintLetters] = useState(new Set());
   const HINT_DURATION_MS = 5000;
   
-  // Glow state for passive keyboard hint
-  const [glowState] = useState(() => {
-    const letters = word.replace(/\s/g, '').split('');
-    const unique = Array.from(new Set(letters));
-    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-    const noise = alphabet.filter(l => !unique.includes(l)).sort(() => 0.5 - Math.random()).slice(0, 5);
-    return { correct: unique.sort(() => 0.5 - Math.random()), noise };
-  });
 
   const timerRefs = useRef([]);
   const totalWordEnergy = calculateWordEnergy(word);
@@ -86,30 +78,6 @@ export default function BattleScreen({ word, playerPokemonId, inventory, onSpend
   const isWon = opponentHp <= 0 || allGuessed;
   const isLost = wrongGuesses >= MAX_WRONG;
   
-  const getGlowData = () => {
-    if (isWon || isLost) return {};
-    const lives = MAX_WRONG - wrongGuesses;
-    if (lives >= 4) return {}; // Need to be low on lives
-
-    let numCorrect = 0, numNoise = 0, className = "";
-    if (lives === 3) {
-      numCorrect = 1; numNoise = 4; className = "glow-soft";
-    } else if (lives === 2) {
-      numCorrect = 1; numNoise = 3; className = "glow-medium";
-    } else if (lives <= 1) {
-      numCorrect = 1; numNoise = 2; className = "glow-bright";
-    }
-
-    const unrevealedCorrect = glowState.correct.filter(l => !guessedLetters.includes(l)).slice(0, numCorrect);
-    const unrevealedNoise = glowState.noise.filter(l => !guessedLetters.includes(l)).slice(0, numNoise);
-    
-    const map = {};
-    unrevealedCorrect.forEach(l => map[l] = className);
-    unrevealedNoise.forEach(l => map[l] = className);
-    return map;
-  };
-  
-  const glowingLettersMap = getGlowData();
 
   useEffect(() => {
     if (isWon && !isLost) {
@@ -423,7 +391,6 @@ export default function BattleScreen({ word, playerPokemonId, inventory, onSpend
               onLetterPress={handleLetterPress}
               disabled={isWon || isLost}
               correctFlashLetters={new Set(lastCorrect ? [lastCorrect] : [])}
-              glowingLetters={glowingLettersMap}
               timedHintLetters={timedHintLetters}
             />
           </div>
