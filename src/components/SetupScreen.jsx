@@ -187,28 +187,6 @@ export default function SetupScreen({ onStartGame, inventory, streak, activePoke
           </span>
         </button>
 
-        <div className="landing-divider">
-          <span className="divider-line" />
-          <span className="divider-text">OR TYPE YOUR OWN</span>
-          <span className="divider-line" />
-        </div>
-
-        <div className="custom-word-row">
-          <input
-            type="text"
-            className="landing-input"
-            placeholder="Enter a word…"
-            value={inputVal}
-            onChange={handleInputChange}
-            maxLength={20}
-            disabled={isValidating}
-          />
-          <button className="cta-secondary" onClick={handleStartCustom} disabled={isValidating}>
-            {isValidating ? '⏳' : '⚔️'}
-          </button>
-        </div>
-
-        {errorMsg && <p className="landing-error">{errorMsg}</p>}
 
         {/* Cloud save status + settings button */}
         <div className="cloud-status-row">
