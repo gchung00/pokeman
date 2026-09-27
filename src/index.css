@@ -1097,17 +1097,19 @@ body {
   border-top: 1px solid rgba(255,255,255,0.07);
   background: rgba(0,0,0,0.5);
   padding: 10px 12px 6px;
+  max-height: 260px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.15) transparent;
 }
 .fsc-strip {
-  display: flex; gap: 8px;
-  overflow-x: auto; padding-bottom: 4px;
-  scrollbar-width: none;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
 }
-.fsc-strip::-webkit-scrollbar { display: none; }
 
 .fsc-card {
-  flex-shrink: 0;
-  width: 68px; height: 68px;
+  width: 100%; aspect-ratio: 1;
   border-radius: 12px;
   border: 2px solid rgba(255,255,255,0.1);
   background: rgba(255,255,255,0.04);
