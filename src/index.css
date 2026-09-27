@@ -615,25 +615,28 @@ body {
 /* -- TOP LEFT HOME BUTTON -- */
 .bs-home-btn {
   position: absolute;
-  top: 12px;
-  left: 12px;
+  top: 10px;
+  left: 10px;
   z-index: 50;
-  background: rgba(0,0,0,0.45);
-  border: 1px solid rgba(255,255,255,0.15);
-  border-radius: 10px;
+  background: rgba(0,0,0,0.55);
+  border: 1.5px solid rgba(255,255,255,0.2);
+  border-radius: 20px;
   color: white;
-  font-size: 1.1rem;
-  width: 36px;
-  height: 36px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  height: 32px;
+  padding: 0 12px 0 8px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 4px;
   cursor: pointer;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(6px);
   transition: background 0.15s, transform 0.1s;
+  white-space: nowrap;
 }
-.bs-home-btn:hover { background: rgba(0,0,0,0.65); transform: scale(1.08); }
-.bs-home-btn:active { transform: scale(0.95); }
+.bs-home-btn:hover { background: rgba(0,0,0,0.75); transform: scale(1.04); }
+.bs-home-btn:active { transform: scale(0.96); }
 
 /* -- TOP RIGHT HINT BUTTON -- */
 .bs-hint-btn {
@@ -722,9 +725,19 @@ body {
 .bs-sac-card:hover { transform: scale(1.1); border-color: #f39c12; }
 .bs-sac-card img { width: 80%; height: 80%; object-fit: contain; }
 .bs-modal-close {
-  background: #ccc; border: none; padding: 8px 16px; border-radius: 10px;
-  font-weight: 700; margin-top: 15px; cursor: pointer;
+  background: rgba(255,255,255,0.12); border: 1.5px solid rgba(255,255,255,0.2);
+  color: #e5e7eb; padding: 10px 18px; border-radius: 12px;
+  font-weight: 700; font-size: 0.9rem; margin-top: 15px; cursor: pointer;
+  transition: background 0.15s;
 }
+.bs-modal-close:hover { background: rgba(255,255,255,0.2); }
+.bs-modal-danger {
+  background: rgba(127,29,29,0.8); border: 1.5px solid #ef4444;
+  color: #fca5a5; padding: 10px 18px; border-radius: 12px;
+  font-weight: 700; font-size: 0.9rem; cursor: pointer;
+  flex: 1; transition: background 0.15s;
+}
+.bs-modal-danger:hover { background: rgba(185,28,28,0.9); }
 
 
 

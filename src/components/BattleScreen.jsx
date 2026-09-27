@@ -324,7 +324,7 @@ export default function BattleScreen({ word, playerPokemonId, inventory, onSpend
           onClick={() => (isWon || isLost) ? onBack() : setShowHomeConfirm(true)}
           aria-label="Home"
         >
-          🏠
+          🏠 Home
         </button>
 
         {/* Top Right Hint Button — hidden in Rokeby Special Edition */}
@@ -526,11 +526,7 @@ export default function BattleScreen({ word, playerPokemonId, inventory, onSpend
               >
                 Cancel
               </button>
-              <button
-                className="cta-secondary"
-                onClick={onBack}
-                style={{ flex: 1, padding: '10px', background: '#7f1d1d', borderColor: '#ef4444', color: '#fca5a5' }}
-              >
+              <button className="bs-modal-danger" onClick={onBack}>
                 Go Home
               </button>
             </div>
