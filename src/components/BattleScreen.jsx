@@ -39,6 +39,7 @@ export default function BattleScreen({ word, playerPokemonId, inventory, onSpend
   // Hint states
   const [hintActive, setHintActive] = useState(false);
   const [isSacrificeModalOpen, setIsSacrificeModalOpen] = useState(false);
+  const [showHomeConfirm, setShowHomeConfirm] = useState(false);
   // Timed hint: letter glows on keyboard for 5s — player must press it themselves
   const [timedHintLetters, setTimedHintLetters] = useState(new Set());
   const HINT_DURATION_MS = 5000;
@@ -267,11 +268,20 @@ export default function BattleScreen({ word, playerPokemonId, inventory, onSpend
     <div className="bs">
       {/* ===== FIELD — top half ===== */}
       <div className="bs-field">
-      
+
+        {/* Top Left Home Button */}
+        <button
+          className="bs-home-btn"
+          onClick={() => (isWon || isLost) ? onBack() : setShowHomeConfirm(true)}
+          aria-label="Home"
+        >
+          🏠
+        </button>
+
         {/* Top Right Hint Button */}
-        <button 
-          className="bs-hint-btn" 
-          onClick={handleOpenSacrificeModal} 
+        <button
+          className="bs-hint-btn"
+          onClick={handleOpenSacrificeModal}
           disabled={!inventory || inventory.length <= 1 || isWon || isLost}
         >
           🔍 USE HINT ({inventory ? inventory.length - 1 : 0})
@@ -444,6 +454,33 @@ export default function BattleScreen({ word, playerPokemonId, inventory, onSpend
               {isWon ? `You caught ${opponentPokemon?.name}!` : 'Your Pokémon fainted...'}
             </p>
             <button className="bs-result-btn" onClick={onBack}>Continue →</button>
+          </div>
+        </div>
+      )}
+
+      {/* ===== HOME CONFIRM ===== */}
+      {showHomeConfirm && (
+        <div className="bs-modal-overlay">
+          <div className="bs-modal-content" style={{ maxWidth: '300px', textAlign: 'center' }}>
+            <div style={{ fontSize: '2rem', marginBottom: '8px' }}>🏠</div>
+            <h3 className="bs-modal-title">Flee the battle?</h3>
+            <p className="bs-modal-desc">You'll lose the battle and return to the main screen.</p>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '16px' }}>
+              <button
+                className="bs-modal-close"
+                onClick={() => setShowHomeConfirm(false)}
+                style={{ flex: 1 }}
+              >
+                Cancel
+              </button>
+              <button
+                className="cta-secondary"
+                onClick={onBack}
+                style={{ flex: 1, padding: '10px', background: '#7f1d1d', borderColor: '#ef4444', color: '#fca5a5' }}
+              >
+                Go Home
+              </button>
+            </div>
           </div>
         </div>
       )}
