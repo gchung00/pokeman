@@ -10,6 +10,18 @@ export const POKEMON_DATA = {
   9: { type: 'water', hp: 79, rarity: 'ultra-rare', attack: 'Hydro Pump', attackDamage: 44 },
   10: { type: 'bug', hp: 45, rarity: 'common', attack: 'String Shot', attackDamage: 15 },
   25: { type: 'electric', hp: 35, rarity: 'rare', attack: 'Thunderbolt', attackDamage: 35 },
+
+  // Gen 3 — Blaziken
+  257: { type: 'fire', hp: 80, rarity: 'rare', attack: 'Blaze Kick', attackDamage: 42 },
+
+  // Gen 3 — Rayquaza (Mega Rayquaza in lore; #384 is the dex ID for the species)
+  384: { type: 'dragon', hp: 105, rarity: 'legendary', attack: 'Dragon Ascent', attackDamage: 60 },
+
+  // Gen 4 — Creation Trio + Arceus
+  483: { type: 'steel', hp: 100, rarity: 'legendary', attack: 'Roar of Time', attackDamage: 55 },
+  484: { type: 'water', hp: 90, rarity: 'legendary', attack: 'Spacial Rend', attackDamage: 55 },
+  487: { type: 'ghost', hp: 150, rarity: 'legendary', attack: 'Shadow Force', attackDamage: 58 },
+  493: { type: 'normal', hp: 120, rarity: 'legendary', attack: 'Judgment', attackDamage: 60 },
 };
 
 export const getTypeColor = (type) => {
