@@ -76,9 +76,12 @@ function App() {
     return () => clearTimeout(saveTimer.current);
   }, [inventory, streak]);
 
-  const handleStartGame = (word, voiceMode = false) => {
+  const [difficulty, setDifficulty] = useState('normal');
+
+  const handleStartGame = (word, voiceMode = false, diff = 'normal') => {
     setTargetWord(word.toUpperCase());
     setIsVoiceMode(voiceMode);
+    setDifficulty(diff);
     setGameState('picking');
   };
 
@@ -173,6 +176,7 @@ function App() {
           inventory={inventory}
           onSpendPokemon={handleSpendPokemon}
           isVoiceMode={isVoiceMode}
+          difficulty={difficulty}
           onBack={handleBackToSetup}
           onFinish={handleFinishGame}
         />

@@ -28,6 +28,7 @@ export default function SetupScreen({ onStartGame, inventory, streak, activePoke
   const [showSyncModal, setShowSyncModal] = useState(false);
   const [tokenInput, setTokenInput] = useState('');
   const [syncMsg, setSyncMsg] = useState('');
+  const [selectedDiff, setSelectedDiff] = useState('normal');
 
   const hasToken = !!getToken();
   const score = inventory.length;
@@ -69,20 +70,15 @@ export default function SetupScreen({ onStartGame, inventory, streak, activePoke
     onStartGame(trimmed, false);
   };
 
+  const DIFF_WORD_RANGE = { easy: [1, 2], normal: [2, 3], hard: [4, 5] };
+
   const handleRandomPlay = (voiceMode) => {
-    let minDiff = 1, maxDiff = 2;
-    if (streak >= 8) { minDiff = 4; maxDiff = 5; }
-    else if (streak >= 5) { minDiff = 3; maxDiff = 5; }
-    else if (streak >= 3) { minDiff = 2; maxDiff = 4; }
-    else if (streak >= 1) { minDiff = 1; maxDiff = 3; }
+    const [minDiff, maxDiff] = DIFF_WORD_RANGE[selectedDiff] || [2, 3];
     const pool = ADVANCED_VOCAB.filter(v => v.diff >= minDiff && v.diff <= maxDiff);
-    if (pool.length === 0) {
-      const fallback = ADVANCED_VOCAB[Math.floor(Math.random() * ADVANCED_VOCAB.length)];
-      onStartGame(fallback.word, voiceMode);
-      return;
-    }
-    const selected = pool[Math.floor(Math.random() * pool.length)];
-    onStartGame(selected.word, voiceMode);
+    const selected = pool.length > 0
+      ? pool[Math.floor(Math.random() * pool.length)]
+      : ADVANCED_VOCAB[Math.floor(Math.random() * ADVANCED_VOCAB.length)];
+    onStartGame(selected.word, voiceMode, selectedDiff);
   };
 
   const handleSaveToken = () => {
@@ -144,6 +140,25 @@ export default function SetupScreen({ onStartGame, inventory, streak, activePoke
             🔥 {streak} Win Streak!
           </div>
         )}
+
+        {/* Difficulty picker */}
+        <div className="diff-picker">
+          {[
+            { id: 'easy',   label: 'Easy',   icon: '🔴', sub: 'Common Pokémon'   },
+            { id: 'normal', label: 'Normal', icon: '🔵', sub: 'Rare Pokémon'     },
+            { id: 'hard',   label: 'Hard',   icon: '🟣', sub: 'Legendaries'      },
+          ].map(({ id, label, icon, sub }) => (
+            <button
+              key={id}
+              className={`diff-btn${selectedDiff === id ? ' diff-btn--active' : ''}`}
+              onClick={() => setSelectedDiff(id)}
+            >
+              <span className="diff-btn-icon">{icon}</span>
+              <span className="diff-btn-label">{label}</span>
+              <span className="diff-btn-sub">{sub}</span>
+            </button>
+          ))}
+        </div>
 
         <button className="cta-primary pulse-animation" onClick={() => handleRandomPlay(true)}>
           <span className="cta-icon">🎧</span>

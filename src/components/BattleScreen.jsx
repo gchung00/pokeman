@@ -3,14 +3,16 @@ import Keyboard from './Keyboard';
 import { speakWord } from '../words';
 import { getLetterEnergy, calculateWordEnergy } from '../lib/energyScore';
 import { fetchPokemon } from '../lib/pokeapi';
-import { getPokemonInfo } from '../lib/pokemonData';
+import { getPokemonInfo, LEGENDARY_IDS } from '../lib/pokemonData';
 
 const getArtwork = (id) =>
   `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
 
 const MAX_WRONG = 6;
 
-export default function BattleScreen({ word, playerPokemonId, inventory, onSpendPokemon, isVoiceMode, onBack, onFinish }) {
+const LEGENDARY_ARR = [...LEGENDARY_IDS];
+
+export default function BattleScreen({ word, playerPokemonId, inventory, onSpendPokemon, isVoiceMode, difficulty = 'normal', onBack, onFinish }) {
   const [playerPokemon, setPlayerPokemon] = useState(null);
   const [opponentPokemon, setOpponentPokemon] = useState(null);
   const [guessedLetters, setGuessedLetters] = useState([]);
@@ -50,7 +52,11 @@ export default function BattleScreen({ word, playerPokemonId, inventory, onSpend
     async function load() {
       try {
         const p = await fetchPokemon(playerPokemonId || 25);
-        const oppId = Math.floor(Math.random() * 1025) + 1;
+        const oppId = difficulty === 'hard'
+          ? LEGENDARY_ARR[Math.floor(Math.random() * LEGENDARY_ARR.length)]
+          : difficulty === 'easy'
+            ? Math.floor(Math.random() * 151) + 1
+            : Math.floor(Math.random() * 493) + 1;
         const o = await fetchPokemon(oppId);
         if (!p || !o) return;
         const pInfo = getPokemonInfo(p.id);

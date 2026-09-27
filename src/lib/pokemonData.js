@@ -36,7 +36,7 @@ export const getTypeColor = (type) => {
 };
 
 // Legendary Pokémon IDs by generation
-const LEGENDARY_IDS = new Set([
+export const LEGENDARY_IDS = new Set([
   // Gen 1
   144, 145, 146, 150, 151,
   // Gen 2
