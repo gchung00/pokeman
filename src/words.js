@@ -135,6 +135,20 @@ export const ADVANCED_VOCAB = [
   { word: "EXTRAORDINARY", diff: 5 }, { word: "CONSCIENTIOUS", diff: 5 }, { word: "TELECOMMUNICATION", diff: 5 },
 ];
 
+// ── Rokeby Year 2 Autumn 1 spelling words (Special Edition) ──────────────────
+export const ROKEBY_WORDS = [
+  // Week 1 — a-e ai ay
+  "PAIN", "SNAIL", "PLAYING", "TODAY", "SNAKE", "FLAME", "BLAME", "FLAKE", "MONDAY", "ACHE",
+  // Week 2 — e-e ee ea
+  "BEEN", "SWEET", "SEAT", "PLEASE", "THESE", "CHEESE", "STREAM", "DELETE", "COMPLETE", "EVENING",
+  // Week 3 — i-e igh y
+  "WHILE", "RIGHT", "BRIGHT", "FLY", "SKY", "FIND", "KIND", "BEHIND", "EYE", "FRIGHTENED",
+  // Week 4 — o-e oa ow
+  "FLOAT", "GOAL", "SMOKE", "BLOW", "MOST", "ONLY", "TOMORROW", "COLD", "KNOW", "WINDOW",
+  // Week 5 — u-e oo ew
+  "SPOON", "CUBE", "JUNE", "BLEW", "FLEW", "THREW", "MOVE", "PROVE", "BALLOON", "IMPROVE",
+];
+
 // 음성 합성 (TTS) 헬퍼 함수
 const doSpeak = (word, voices, rate) => {
   window.speechSynthesis.cancel();

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ADVANCED_VOCAB } from '../words';
+import { ADVANCED_VOCAB, ROKEBY_WORDS } from '../words';
 import Gallery from './Gallery';
 import { getToken, setToken, clearToken } from '../lib/githubSync';
 
@@ -29,6 +29,7 @@ export default function SetupScreen({ onStartGame, inventory, streak, activePoke
   const [tokenInput, setTokenInput] = useState('');
   const [syncMsg, setSyncMsg] = useState('');
   const [selectedDiff, setSelectedDiff] = useState('normal');
+  const isRokeby = selectedDiff === 'rokeby';
 
   const hasToken = !!getToken();
   const score = inventory.length;
@@ -70,9 +71,14 @@ export default function SetupScreen({ onStartGame, inventory, streak, activePoke
     onStartGame(trimmed, false);
   };
 
-  const DIFF_WORD_RANGE = { easy: [1, 2], normal: [2, 3], hard: [4, 5] };
+  const DIFF_WORD_RANGE = { normal: [2, 3], hard: [4, 5] };
 
   const handleRandomPlay = (voiceMode) => {
+    if (selectedDiff === 'rokeby') {
+      const word = ROKEBY_WORDS[Math.floor(Math.random() * ROKEBY_WORDS.length)];
+      onStartGame(word, voiceMode, 'rokeby');
+      return;
+    }
     const [minDiff, maxDiff] = DIFF_WORD_RANGE[selectedDiff] || [2, 3];
     const pool = ADVANCED_VOCAB.filter(v => v.diff >= minDiff && v.diff <= maxDiff);
     const selected = pool.length > 0
@@ -144,9 +150,8 @@ export default function SetupScreen({ onStartGame, inventory, streak, activePoke
         {/* Difficulty picker */}
         <div className="diff-picker">
           {[
-            { id: 'easy',   label: 'Easy',   icon: '🔴', sub: 'Common Pokémon'   },
-            { id: 'normal', label: 'Normal', icon: '🔵', sub: 'Rare Pokémon'     },
-            { id: 'hard',   label: 'Hard',   icon: '🟣', sub: 'Legendaries'      },
+            { id: 'normal', label: 'Normal', icon: '🔵', sub: 'Rare Pokémon'  },
+            { id: 'hard',   label: 'Hard',   icon: '🟣', sub: 'Legendaries'   },
           ].map(({ id, label, icon, sub }) => (
             <button
               key={id}
@@ -158,7 +163,21 @@ export default function SetupScreen({ onStartGame, inventory, streak, activePoke
               <span className="diff-btn-sub">{sub}</span>
             </button>
           ))}
+          <button
+            className={`diff-btn diff-btn--rokeby${isRokeby ? ' diff-btn--active' : ''}`}
+            onClick={() => setSelectedDiff('rokeby')}
+          >
+            <span className="diff-btn-icon">⭐</span>
+            <span className="diff-btn-label">Rokeby</span>
+            <span className="diff-btn-sub">Special Edition</span>
+          </button>
         </div>
+
+        {isRokeby && (
+          <div className="rokeby-banner">
+            ✨ Year 2 Spellings · No hints · Legendary Pokémon
+          </div>
+        )}
 
         <button className="cta-primary pulse-animation" onClick={() => handleRandomPlay(true)}>
           <span className="cta-icon">🎧</span>

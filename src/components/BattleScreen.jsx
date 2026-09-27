@@ -12,6 +12,30 @@ const MAX_WRONG = 6;
 
 const LEGENDARY_ARR = [...LEGENDARY_IDS];
 
+// Iconic fan-favourite Pokémon for Rokeby Special Edition
+const SPECIAL_IDS = [
+  6,   // Charizard
+  25,  // Pikachu
+  94,  // Gengar
+  130, // Gyarados
+  143, // Snorlax
+  149, // Dragonite
+  150, // Mewtwo
+  151, // Mew
+  248, // Tyranitar
+  257, // Blaziken
+  373, // Salamence
+  384, // Rayquaza
+  445, // Garchomp
+  448, // Lucario
+  483, // Dialga
+  484, // Palkia
+  487, // Giratina
+  493, // Arceus
+  745, // Lycanroc
+  800, // Necrozma
+];
+
 export default function BattleScreen({ word, playerPokemonId, inventory, onSpendPokemon, isVoiceMode, difficulty = 'normal', onBack, onFinish }) {
   const [playerPokemon, setPlayerPokemon] = useState(null);
   const [opponentPokemon, setOpponentPokemon] = useState(null);
@@ -54,10 +78,10 @@ export default function BattleScreen({ word, playerPokemonId, inventory, onSpend
     async function load() {
       try {
         const p = await fetchPokemon(playerPokemonId || 25);
-        const oppId = difficulty === 'hard'
-          ? LEGENDARY_ARR[Math.floor(Math.random() * LEGENDARY_ARR.length)]
-          : difficulty === 'easy'
-            ? Math.floor(Math.random() * 151) + 1
+        const oppId = difficulty === 'rokeby'
+          ? SPECIAL_IDS[Math.floor(Math.random() * SPECIAL_IDS.length)]
+          : difficulty === 'hard'
+            ? LEGENDARY_ARR[Math.floor(Math.random() * LEGENDARY_ARR.length)]
             : Math.floor(Math.random() * 493) + 1;
         const o = await fetchPokemon(oppId);
         if (!p || !o) return;
@@ -219,9 +243,8 @@ export default function BattleScreen({ word, playerPokemonId, inventory, onSpend
       timerRefs.current.push(setTimeout(() => setPlayerShake(false), 900));
 
       // Auto-hint: fires silently once when lives hit exactly 2.
-      // Shows 1 real letter + 1 decoy for 2 seconds — player must spot and press the right one.
-      // At 1 life left: no hint at all.
-      if (livesLeft === 2 && !autoHintFired.current) {
+      // Disabled entirely in Rokeby Special Edition and at 1 life left.
+      if (difficulty !== 'rokeby' && livesLeft === 2 && !autoHintFired.current) {
         autoHintFired.current = true;
         const alreadyGuessed = new Set([...guessedLetters, letter]);
         const unrevealed = Array.from(uniqueLetters).filter(l => !alreadyGuessed.has(l));
@@ -278,14 +301,16 @@ export default function BattleScreen({ word, playerPokemonId, inventory, onSpend
           🏠
         </button>
 
-        {/* Top Right Hint Button */}
-        <button
-          className="bs-hint-btn"
-          onClick={handleOpenSacrificeModal}
-          disabled={!inventory || inventory.length <= 1 || isWon || isLost}
-        >
-          🔍 USE HINT ({inventory ? inventory.length - 1 : 0})
-        </button>
+        {/* Top Right Hint Button — hidden in Rokeby Special Edition */}
+        {difficulty !== 'rokeby' && (
+          <button
+            className="bs-hint-btn"
+            onClick={handleOpenSacrificeModal}
+            disabled={!inventory || inventory.length <= 1 || isWon || isLost}
+          >
+            🔍 USE HINT ({inventory ? inventory.length - 1 : 0})
+          </button>
+        )}
 
         {/* Hint Magic Overlays */}
         {hintActive && (
