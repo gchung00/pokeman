@@ -45,6 +45,7 @@ export default function BattleScreen({ word, playerPokemonId, inventory, onSpend
   
 
   const timerRefs = useRef([]);
+  const autoHintFired = useRef(false);
   const totalWordEnergy = calculateWordEnergy(word);
   const showLog = (msg) => setBattleLog(msg);
 
@@ -201,20 +202,47 @@ export default function BattleScreen({ word, playerPokemonId, inventory, onSpend
       const newWrong = wrongGuesses + 1;
       setWrongGuesses(newWrong);
       const livesLeft = MAX_WRONG - newWrong;
-      
+
       // Trigger enemy dodge animation on miss
       setIsDodging(true);
       showLog(`💨 Missed! The enemy dodged your attack!`);
       setShowDamageEffect(true);
       setPlayerShake(true);
-      
+
       timerRefs.current.push(setTimeout(() => {
         setIsDodging(false);
         setPlayerHp(prev => Math.max(0, prev - Math.round(playerMaxHp / MAX_WRONG)));
         setShowDamageEffect(false);
       }, 600));
-      
+
       timerRefs.current.push(setTimeout(() => setPlayerShake(false), 900));
+
+      // Auto-hint: fires silently once when lives hit exactly 2.
+      // Shows 1 real letter + 1 decoy for 2 seconds — player must spot and press the right one.
+      // At 1 life left: no hint at all.
+      if (livesLeft === 2 && !autoHintFired.current) {
+        autoHintFired.current = true;
+        const alreadyGuessed = new Set([...guessedLetters, letter]);
+        const unrevealed = Array.from(uniqueLetters).filter(l => !alreadyGuessed.has(l));
+        const wrongPool = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
+          .filter(l => !uniqueLetters.has(l) && !alreadyGuessed.has(l));
+        if (unrevealed.length > 0 && wrongPool.length > 0) {
+          const hintLetter = unrevealed[Math.floor(Math.random() * unrevealed.length)];
+          const decoy = wrongPool[Math.floor(Math.random() * wrongPool.length)];
+          const AUTO_HINT_MS = 2000;
+          timerRefs.current.push(setTimeout(() => {
+            setTimedHintLetters(new Set([hintLetter, decoy]));
+            timerRefs.current.push(setTimeout(() => {
+              setTimedHintLetters(prev => {
+                const next = new Set(prev);
+                next.delete(hintLetter);
+                next.delete(decoy);
+                return next;
+              });
+            }, AUTO_HINT_MS));
+          }, 500));
+        }
+      }
     }
     if (isVoiceMode) speakWord(word, 0.85);
   };
