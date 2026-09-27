@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import SetupScreen from './components/SetupScreen';
 import BattleScreen from './components/BattleScreen';
 import Gallery from './components/Gallery';
+import FighterSelect from './components/FighterSelect';
 import { loadFromGitHub, saveToGitHub, fetchCurrentSha, getToken } from './lib/githubSync';
 
 function App() {
@@ -155,16 +156,13 @@ function App() {
       )}
 
       {gameState === 'picking' && (
-        <Gallery
+        <FighterSelect
           inventory={inventory}
           activeId={activePokemonId}
-          onSelect={setActivePokemonId}
-          onClose={handleBackToSetup}
-          onPickForBattle={handlePickedForBattle}
-          onMovePokemon={(id, caughtDate, x, y) => {
-            setInventory(prev => prev.map(p =>
-              (p.id === id && p.caughtDate === caughtDate) ? { ...p, x, y } : p
-            ));
+          onBack={handleBackToSetup}
+          onPickForBattle={(id) => {
+            setActivePokemonId(id);
+            handlePickedForBattle(id);
           }}
         />
       )}
