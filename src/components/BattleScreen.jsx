@@ -80,11 +80,17 @@ export default function BattleScreen({ word, playerPokemonId, inventory, onSpend
     async function load() {
       try {
         const p = await fetchPokemon(playerPokemonId || 25);
-        const oppId = difficulty === 'rokeby'
-          ? SPECIAL_IDS[Math.floor(Math.random() * SPECIAL_IDS.length)]
-          : difficulty === 'hard'
-            ? LEGENDARY_ARR[Math.floor(Math.random() * LEGENDARY_ARR.length)]
-            : Math.floor(Math.random() * 493) + 1;
+        let oppId;
+        if (difficulty === 'rokeby') {
+          const ownedIds = new Set((inventory || []).map(p => p.id));
+          const unowned = SPECIAL_IDS.filter(id => !ownedIds.has(id));
+          const pool = unowned.length > 0 ? unowned : SPECIAL_IDS;
+          oppId = pool[Math.floor(Math.random() * pool.length)];
+        } else if (difficulty === 'hard') {
+          oppId = LEGENDARY_ARR[Math.floor(Math.random() * LEGENDARY_ARR.length)];
+        } else {
+          oppId = Math.floor(Math.random() * 493) + 1;
+        }
         const o = await fetchPokemon(oppId);
         if (!p || !o) return;
         const pInfo = getPokemonInfo(p.id);
