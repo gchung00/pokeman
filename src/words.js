@@ -153,7 +153,8 @@ export const ROKEBY_WORDS = [
 const doSpeak = (word, voices, rate) => {
   window.speechSynthesis.cancel();
 
-  const ukVoices = voices.filter(v => v.lang.includes("en-GB") || v.lang.includes("en_GB"));
+  const langUpper = (v) => v.lang.toUpperCase();
+  const ukVoices = voices.filter(v => langUpper(v).includes("EN-GB") || langUpper(v).includes("EN_GB"));
 
   const priorityNames = [
     "Google UK English Female",
