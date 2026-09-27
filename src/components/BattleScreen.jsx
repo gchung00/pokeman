@@ -52,6 +52,7 @@ export default function BattleScreen({ word, playerPokemonId, inventory, onSpend
   const [oppShake, setOppShake] = useState(false);
   const [playerShake, setPlayerShake] = useState(false);
   const [showResult, setShowResult] = useState(false);
+  const [countdown, setCountdown] = useState(null);
   const [battleLog, setBattleLog] = useState('A wild Pokémon appeared!');
   const [attackCount, setAttackCount] = useState(0);
   
@@ -63,6 +64,7 @@ export default function BattleScreen({ word, playerPokemonId, inventory, onSpend
   // Hint states
   const [hintActive, setHintActive] = useState(false);
   const [isSacrificeModalOpen, setIsSacrificeModalOpen] = useState(false);
+  const [sacrificeCost, setSacrificeCost] = useState(0);
   const [showHomeConfirm, setShowHomeConfirm] = useState(false);
   // Timed hint: letter glows on keyboard for 5s — player must press it themselves
   const [timedHintLetters, setTimedHintLetters] = useState(new Set());
@@ -117,24 +119,45 @@ export default function BattleScreen({ word, playerPokemonId, inventory, onSpend
       timerRefs.current.push(setTimeout(() => {
         setShowResult(true);
         onFinish('win', opponentPokemon?.id);
+        let c = 4;
+        const tick = setInterval(() => {
+          c -= 1;
+          setCountdown(c);
+          if (c <= 0) { clearInterval(tick); onBack(); }
+        }, 1000);
+        timerRefs.current.push(tick);
       }, 1800));
     } else if (isLost) {
       showLog('💀 Your Pokémon fainted...');
       timerRefs.current.push(setTimeout(() => {
         setShowResult(true);
         onFinish('lose');
+        let c = 4;
+        const tick = setInterval(() => {
+          c -= 1;
+          setCountdown(c);
+          if (c <= 0) { clearInterval(tick); onBack(); }
+        }, 1000);
+        timerRefs.current.push(tick);
       }, 1500));
     }
   }, [isWon, isLost, allGuessed]);
 
   const handleOpenSacrificeModal = () => {
-    if (!inventory || inventory.length <= 1 || isWon || isLost) return;
+    const bench = inventory ? inventory.filter(p => p.id !== playerPokemonId) : [];
+    if (bench.length < 2 || isWon || isLost) return;
+    const maxCost = Math.min(6, bench.length);
+    const cost = Math.floor(Math.random() * (maxCost - 1)) + 2;
+    setSacrificeCost(cost);
     setIsSacrificeModalOpen(true);
   };
 
-  const handleConfirmHint = (chosenId) => {
+  const handleConfirmHint = () => {
     setIsSacrificeModalOpen(false);
-    onSpendPokemon(chosenId);
+
+    const bench = inventory ? inventory.filter(p => p.id !== playerPokemonId) : [];
+    const shuffled = [...bench].sort(() => Math.random() - 0.5);
+    shuffled.slice(0, sacrificeCost).forEach(p => onSpendPokemon(p.id));
 
     setHintActive(true);
     timerRefs.current.push(setTimeout(() => setHintActive(false), 1500));
@@ -142,10 +165,7 @@ export default function BattleScreen({ word, playerPokemonId, inventory, onSpend
     const unrevealed = Array.from(uniqueLetters).filter(l => !guessedLetters.includes(l));
     if (unrevealed.length === 0) return;
 
-    // Pick 1 random unrevealed letter and highlight it on the keyboard for HINT_DURATION_MS.
-    // The player must press it themselves — the hint does NOT auto-reveal it.
     const letter = unrevealed[Math.floor(Math.random() * unrevealed.length)];
-
     timerRefs.current.push(setTimeout(() => {
       setTimedHintLetters(prev => new Set([...prev, letter]));
       showLog(`⏱️ Hint: press the glowing key within 5 seconds!`);
@@ -306,9 +326,9 @@ export default function BattleScreen({ word, playerPokemonId, inventory, onSpend
           <button
             className="bs-hint-btn"
             onClick={handleOpenSacrificeModal}
-            disabled={!inventory || inventory.length <= 1 || isWon || isLost}
+            disabled={!inventory || inventory.filter(p => p.id !== playerPokemonId).length < 2 || isWon || isLost}
           >
-            🔍 USE HINT ({inventory ? inventory.length - 1 : 0})
+            🔍 HINT ({inventory ? inventory.filter(p => p.id !== playerPokemonId).length : 0})
           </button>
         )}
 
@@ -478,7 +498,9 @@ export default function BattleScreen({ word, playerPokemonId, inventory, onSpend
             <p className="bs-result-desc">
               {isWon ? `You caught ${opponentPokemon?.name}!` : 'Your Pokémon fainted...'}
             </p>
-            <button className="bs-result-btn" onClick={onBack}>Continue →</button>
+            <button className="bs-result-btn" onClick={onBack}>
+              Continue → {countdown !== null && <span className="bs-result-countdown">({countdown})</span>}
+            </button>
           </div>
         </div>
       )}
@@ -513,17 +535,27 @@ export default function BattleScreen({ word, playerPokemonId, inventory, onSpend
       {/* ===== SACRIFICE MODAL ===== */}
       {isSacrificeModalOpen && (
         <div className="bs-modal-overlay">
-          <div className="bs-modal-content">
-            <h3 className="bs-modal-title">Release to get Hint</h3>
-            <p className="bs-modal-desc">Select a Pokémon to release back to the wild in exchange for a Hint!</p>
-            <div className="bs-sac-grid">
-              {inventory?.filter(p => p.id !== playerPokemonId).map(p => (
-                <div key={`${p.id}-${p.caughtDate}`} className="bs-sac-card" onClick={() => handleConfirmHint(p.id)}>
-                  <img src={getArtwork(p.id)} alt="spare pokemon" />
-                </div>
-              ))}
+          <div className="bs-modal-content" style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>⚠️</div>
+            <h3 className="bs-modal-title">Sacrifice for a Hint?</h3>
+            <p className="bs-modal-desc">
+              Release <strong style={{ color: '#f59e0b' }}>{sacrificeCost} Pokémon</strong> back to the wild to reveal a hint letter for 5 seconds.
+            </p>
+            <p className="bs-modal-desc" style={{ color: '#f87171', fontSize: '0.8rem', marginTop: '4px' }}>
+              They will be chosen randomly and cannot be recovered!
+            </p>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '16px' }}>
+              <button className="bs-modal-close" onClick={() => setIsSacrificeModalOpen(false)} style={{ flex: 1 }}>
+                Cancel
+              </button>
+              <button
+                className="cta-secondary"
+                onClick={handleConfirmHint}
+                style={{ flex: 1, padding: '10px', background: '#7c2d12', borderColor: '#f97316', color: '#fed7aa' }}
+              >
+                Sacrifice {sacrificeCost}!
+              </button>
             </div>
-            <button className="bs-modal-close" onClick={() => setIsSacrificeModalOpen(false)}>Cancel</button>
           </div>
         </div>
       )}
