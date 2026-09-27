@@ -152,47 +152,46 @@ export const ROKEBY_WORDS = [
 // 음성 합성 (TTS) 헬퍼 함수
 const doSpeak = (word, voices, rate) => {
   window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(word.toLowerCase() + ".");
-  utterance.lang = "en-GB";
-  utterance.rate = rate;
-  utterance.pitch = 1.0;
 
   const ukVoices = voices.filter(v => v.lang.includes("en-GB") || v.lang.includes("en_GB"));
 
   const priorityNames = [
     "Google UK English Female",
     "Google UK English Male",
-    "Daniel",
-    "Serena",
-    "Arthur",
-    "Martha",
-    "Libby Online",
-    "Sonia Online",
-    "Ryan Online",
-    "Maisie Online",
-    "Microsoft Susan Online",
-    "Microsoft George Online",
-    "Hazel"
+    "Daniel",       // macOS / iOS UK Male
+    "Kate",         // macOS UK Female
+    "Oliver",       // macOS UK Male (some versions)
+    "Serena",       // macOS UK Female
+    "Arthur",       // macOS UK Male
+    "Martha",       // macOS UK Female
+    "Libby",        // Windows UK Female (Online & Offline)
+    "Sonia",        // Windows UK Female Online
+    "Ryan",         // Windows UK Male Online
+    "Maisie",       // Windows UK Female Online
+    "Microsoft Susan",
+    "Microsoft George",
+    "Hazel",
   ];
 
   let selectedVoice = null;
-
   for (const name of priorityNames) {
     selectedVoice = ukVoices.find(v => v.name.includes(name));
     if (selectedVoice) break;
   }
-
   if (!selectedVoice) {
     selectedVoice = ukVoices.find(v => v.name.includes("Google") || v.name.includes("Online"));
   }
-
   if (!selectedVoice && ukVoices.length > 0) {
     selectedVoice = ukVoices[0];
   }
 
-  if (selectedVoice) {
-    utterance.voice = selectedVoice;
-  }
+  // Speak the word twice with a pause so the listener catches it clearly
+  const text = word.toLowerCase() + "...  " + word.toLowerCase() + ".";
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = "en-GB";
+  utterance.rate = Math.min(rate, 0.8); // slightly slower for clarity
+  utterance.pitch = 1.0;
+  if (selectedVoice) utterance.voice = selectedVoice;
 
   window.speechSynthesis.speak(utterance);
 };
