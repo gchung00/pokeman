@@ -1087,12 +1087,13 @@ body {
 
 /* Grid */
 .fsc-grid-wrap {
-  flex-shrink: 0;
+  flex: 0 0 240px;
+  min-height: 0;
   border-top: 1px solid rgba(255,255,255,0.07);
   background: rgba(0,0,0,0.5);
   padding: 10px 12px 8px;
-  max-height: 240px;
   overflow-y: auto;
+  overflow-x: hidden;
   scrollbar-width: thin;
   scrollbar-color: rgba(255,255,255,0.15) transparent;
 }
